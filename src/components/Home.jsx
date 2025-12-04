@@ -34,23 +34,24 @@ const Home = () => {
                     <button
                         onClick={() => setPinModalOpen(true)}
                         style={{
-                            background: 'transparent',
-                            border: '1px solid var(--border-color)',
-                            fontSize: '1.5rem',
+                            background: pin ? 'transparent' : 'var(--accent-color)',
+                            border: pin ? '1px solid var(--border-color)' : 'none',
+                            fontSize: pin ? '1.5rem' : '1rem',
                             cursor: 'pointer',
-                            padding: '0.5rem',
+                            padding: pin ? '0.5rem' : '0.5rem 1rem',
                             borderRadius: '12px',
                             transition: 'transform 0.2s',
-                            color: 'var(--text-color)',
+                            color: pin ? 'var(--text-color)' : '#fff',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            fontWeight: pin ? 'normal' : '600'
                         }}
                         title="Paramètres (Code PIN)"
                         onMouseEnter={e => e.target.style.transform = 'scale(1.05)'}
                         onMouseLeave={e => e.target.style.transform = 'scale(1)'}
                     >
-                        ⚙️
+                        {pin ? '⚙️' : '🔒 Définir Code PIN'}
                     </button>
                     <button
                         onClick={() => setSyncModalOpen(true)}

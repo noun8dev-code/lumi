@@ -2,7 +2,8 @@
 create table families (
   id text primary key,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  kids jsonb default '[]'::jsonb
+  kids jsonb default '[]'::jsonb,
+  pin text -- Ajout de la colonne PIN
 );
 
 -- Désactiver la sécurité RLS pour simplifier (pour un projet enfant)

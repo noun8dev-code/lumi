@@ -112,12 +112,14 @@ export const DataProvider = ({ children }) => {
                         filter: `id=eq.${familyId}`,
                     },
                     (payload) => {
-                        if (payload.new && payload.new.kids) {
-                            // Avoid infinite loop by checking if content is different? 
-                            // React state update might trigger another save.
-                            // Ideally we should check if the update came from us.
-                            // For now, simple set.
-                            setKids(payload.new.kids);
+                        if (payload.new) {
+                            if (payload.new.kids) {
+                                setKids(payload.new.kids);
+                            }
+                            // Sync PIN if it changes remotely
+                            if (payload.new.pin !== undefined) {
+                                setPin(payload.new.pin);
+                            }
                         }
                     }
                 )
@@ -144,7 +146,11 @@ export const DataProvider = ({ children }) => {
         const { error } = await supabase
             .from('families')
             .insert([
-                { id: newFamilyId, kids: kids }
+                {
+                    id: newFamilyId,
+                    kids: kids,
+                    pin: pin // Save current PIN to DB
+                }
             ]);
 
         if (error) {
@@ -167,6 +173,7 @@ export const DataProvider = ({ children }) => {
         if (data) {
             setFamilyId(id);
             if (data.kids) setKids(data.kids);
+            if (data.pin) setPin(data.pin); // Load PIN from DB
             return true;
         }
         if (error) {
@@ -189,6 +196,25 @@ export const DataProvider = ({ children }) => {
                 });
         }
     }, [kids, familyId]);
+
+    // New Effect to sync PIN changes
+    useEffect(() => {
+        if (pin) {
+            localStorage.setItem('sop_pin', pin);
+        } else {
+            localStorage.removeItem('sop_pin');
+        }
+
+        if (familyId) {
+            supabase
+                .from('families')
+                .update({ pin: pin })
+                .eq('id', familyId)
+                .then(({ error }) => {
+                    if (error) console.error("Sync PIN error", error);
+                });
+        }
+    }, [pin, familyId]);
 
     useEffect(() => {
         localStorage.setItem('sop_actions', JSON.stringify(actions));
