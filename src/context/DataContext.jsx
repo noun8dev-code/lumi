@@ -1,6 +1,5 @@
 import { createContext, useState, useEffect, useContext } from 'react';
-import { db } from '../firebase';
-import { collection, doc, setDoc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
+import { supabase } from '../supabaseClient';
 
 const DataContext = createContext();
 
@@ -101,15 +100,32 @@ export const DataProvider = ({ children }) => {
         if (familyId) {
             localStorage.setItem('sop_family_id', familyId);
 
-            // Subscribe to Firestore
-            const unsub = onSnapshot(doc(db, "families", familyId), (doc) => {
-                if (doc.exists()) {
-                    const data = doc.data();
-                    if (data.kids) setKids(data.kids);
-                    // We could also sync actions/logs if we want full sync
-                }
-            });
-            return () => unsub();
+            // Subscribe to Supabase
+            const channel = supabase
+                .channel('family-updates')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'families',
+                        filter: `id=eq.${familyId}`,
+                    },
+                    (payload) => {
+                        if (payload.new && payload.new.kids) {
+                            // Avoid infinite loop by checking if content is different? 
+                            // React state update might trigger another save.
+                            // Ideally we should check if the update came from us.
+                            // For now, simple set.
+                            setKids(payload.new.kids);
+                        }
+                    }
+                )
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(channel);
+            };
         } else {
             localStorage.removeItem('sop_family_id');
         }
@@ -125,20 +141,36 @@ export const DataProvider = ({ children }) => {
 
     const createFamily = async () => {
         const newFamilyId = Math.random().toString(36).substring(2, 8).toUpperCase();
-        await setDoc(doc(db, "families", newFamilyId), {
-            kids: kids, // Upload current local kids
-            createdAt: new Date().toISOString()
-        });
+        const { error } = await supabase
+            .from('families')
+            .insert([
+                { id: newFamilyId, kids: kids }
+            ]);
+
+        if (error) {
+            console.error("Error creating family:", error);
+            alert("Erreur lors de la création de la famille: " + error.message);
+            return null;
+        }
+
         setFamilyId(newFamilyId);
         return newFamilyId;
     };
 
     const joinFamily = async (id) => {
-        const docRef = doc(db, "families", id);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
+        const { data, error } = await supabase
+            .from('families')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (data) {
             setFamilyId(id);
+            if (data.kids) setKids(data.kids);
             return true;
+        }
+        if (error) {
+            console.error("Error joining family:", error);
         }
         return false;
     };
@@ -147,9 +179,14 @@ export const DataProvider = ({ children }) => {
         if (!familyId) { // Only save to local if not syncing
             localStorage.setItem('sop_kids', JSON.stringify(kids));
         } else {
-            // If syncing, update Firestore whenever kids change
-            // Debounce could be good here but for now direct update
-            updateDoc(doc(db, "families", familyId), { kids: kids }).catch(e => console.error("Sync error", e));
+            // If syncing, update Supabase whenever kids change
+            supabase
+                .from('families')
+                .update({ kids: kids })
+                .eq('id', familyId)
+                .then(({ error }) => {
+                    if (error) console.error("Sync error", error);
+                });
         }
     }, [kids, familyId]);
 
