@@ -3,6 +3,7 @@ import { useData } from '../context/DataContext';
 import { Link } from 'react-router-dom';
 import PinModal from './PinModal';
 import SyncModal from './SyncModal';
+import PaymentModal from './PaymentModal';
 
 
 
@@ -14,6 +15,7 @@ const Home = () => {
     const [pinStep, setPinStep] = useState('check'); // 'check' | 'set'
     const [syncModalOpen, setSyncModalOpen] = useState(false);
     const [pendingChildName, setPendingChildName] = useState(null);
+    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
     const handlePinClick = () => {
         setPendingChildName(null);
@@ -43,9 +45,7 @@ const Home = () => {
         }
     };
 
-    const handleAddChild = () => {
-        if (!newChildName.trim()) return;
-
+    const processAddChild = () => {
         if (pin) {
             setPendingChildName(newChildName.trim());
             setPinStep('check');
@@ -54,6 +54,21 @@ const Home = () => {
             addChild(newChildName.trim());
             setNewChildName('');
         }
+    };
+
+    const handleAddChild = () => {
+        if (!newChildName.trim()) return;
+
+        if (kids.length >= 1) {
+            setPaymentModalOpen(true);
+        } else {
+            processAddChild();
+        }
+    };
+
+    const handlePaymentConfirm = () => {
+        setPaymentModalOpen(false);
+        processAddChild();
     };
 
 
@@ -140,6 +155,12 @@ const Home = () => {
                 onCreateFamily={createFamily}
                 onJoinFamily={joinFamily}
                 currentFamilyId={familyId}
+            />
+
+            <PaymentModal
+                isOpen={paymentModalOpen}
+                onClose={() => setPaymentModalOpen(false)}
+                onConfirm={handlePaymentConfirm}
             />
         </div>
     );
