@@ -13,8 +13,10 @@ const Home = () => {
     const [pinModalOpen, setPinModalOpen] = useState(false);
     const [pinStep, setPinStep] = useState('check'); // 'check' | 'set'
     const [syncModalOpen, setSyncModalOpen] = useState(false);
+    const [pendingChildName, setPendingChildName] = useState(null);
 
     const handlePinClick = () => {
+        setPendingChildName(null);
         if (pin) {
             setPinStep('check');
         } else {
@@ -24,7 +26,13 @@ const Home = () => {
     };
 
     const handlePinSuccess = (newPin) => {
-        if (pinStep === 'check') {
+        if (pendingChildName) {
+            // PIN verified for adding child
+            addChild(pendingChildName);
+            setNewChildName('');
+            setPendingChildName(null);
+            setPinModalOpen(false);
+        } else if (pinStep === 'check') {
             // Verification successful, move to set new pin
             setPinStep('set');
         } else {
@@ -36,8 +44,14 @@ const Home = () => {
     };
 
     const handleAddChild = () => {
-        if (newChildName.trim()) {
-            addChild(newChildName);
+        if (!newChildName.trim()) return;
+
+        if (pin) {
+            setPendingChildName(newChildName.trim());
+            setPinStep('check');
+            setPinModalOpen(true);
+        } else {
+            addChild(newChildName.trim());
             setNewChildName('');
         }
     };
@@ -109,12 +123,15 @@ const Home = () => {
             <PinModal
                 key={pinStep} // Force re-render when step changes
                 isOpen={pinModalOpen}
-                onClose={() => setPinModalOpen(false)}
+                onClose={() => {
+                    setPinModalOpen(false);
+                    setPendingChildName(null);
+                }}
                 onSuccess={handlePinSuccess}
-                title={pinStep === 'check' ? "Entrez le code actuel" : "Définir le nouveau code"}
-                setMode={pinStep === 'set'}
+                title={pendingChildName ? "Code PIN requis" : (pinStep === 'check' ? "Entrez le code actuel" : "Définir le nouveau code")}
+                setMode={pinStep === 'set' && !pendingChildName}
                 correctPin={pin}
-                closeOnSuccess={pinStep !== 'check'}
+                closeOnSuccess={pinStep !== 'check' || pendingChildName}
             />
 
             <SyncModal
