@@ -137,12 +137,19 @@ const Home = () => {
                                 <button
                                     onClick={(e) => handleDeleteChild(e, kid.id, kid.name)}
                                     style={{
-                                        background: 'transparent',
+                                        background: '#ff3b30',
+                                        color: 'white',
                                         border: 'none',
-                                        fontSize: '1.2rem',
+                                        borderRadius: '50%',
+                                        width: '36px',
+                                        height: '36px',
+                                        fontSize: '1rem',
                                         cursor: 'pointer',
-                                        padding: '5px',
-                                        marginRight: '5px'
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        marginRight: '10px',
+                                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
                                     }}
                                     title="Supprimer"
                                 >
