@@ -83,6 +83,8 @@ export const DataProvider = ({ children }) => {
         return localStorage.getItem('sop_family_id') || null;
     });
 
+    const [isInitialized, setIsInitialized] = useState(false);
+
     useEffect(() => {
         localStorage.setItem('sop_theme', theme);
         document.body.setAttribute('data-theme', theme);
@@ -95,6 +97,41 @@ export const DataProvider = ({ children }) => {
             localStorage.removeItem('sop_pin');
         }
     }, [pin]);
+
+    // Initial Fetch on Mount / Family Change
+    useEffect(() => {
+        if (familyId) {
+            const fetchFamilyData = async () => {
+                const { data, error } = await supabase
+                    .from('families')
+                    .select('*')
+                    .eq('id', familyId)
+                    .single();
+
+                if (data) {
+                    if (data.kids) {
+                        let loadedKids = data.kids;
+                        if (typeof loadedKids === 'string') {
+                            try {
+                                loadedKids = JSON.parse(loadedKids);
+                            } catch (e) {
+                                console.error("Failed to parse kids JSON", e);
+                                loadedKids = [];
+                            }
+                        }
+                        if (Array.isArray(loadedKids)) {
+                            setKids(loadedKids);
+                        }
+                    }
+                    if (data.pin) setPin(data.pin);
+                }
+                setIsInitialized(true);
+            };
+            fetchFamilyData();
+        } else {
+            setIsInitialized(true);
+        }
+    }, [familyId]);
 
     useEffect(() => {
         if (familyId) {
@@ -169,6 +206,7 @@ export const DataProvider = ({ children }) => {
         }
 
         setFamilyId(newFamilyId);
+        setIsInitialized(true);
         return newFamilyId;
     };
 
@@ -198,6 +236,7 @@ export const DataProvider = ({ children }) => {
                 }
             }
             if (data.pin) setPin(data.pin); // Load PIN from DB
+            setIsInitialized(true);
             return true;
         }
         if (error) {
@@ -211,15 +250,18 @@ export const DataProvider = ({ children }) => {
             localStorage.setItem('sop_kids', JSON.stringify(kids));
         } else {
             // If syncing, update Supabase whenever kids change
-            supabase
-                .from('families')
-                .update({ kids: kids })
-                .eq('id', familyId)
-                .then(({ error }) => {
-                    if (error) console.error("Sync error", error);
-                });
+            // ONLY if initialized to avoid overwriting with empty state on load
+            if (isInitialized) {
+                supabase
+                    .from('families')
+                    .update({ kids: kids })
+                    .eq('id', familyId)
+                    .then(({ error }) => {
+                        if (error) console.error("Sync error", error);
+                    });
+            }
         }
-    }, [kids, familyId]);
+    }, [kids, familyId, isInitialized]);
 
     // New Effect to sync PIN changes
     useEffect(() => {
@@ -229,7 +271,7 @@ export const DataProvider = ({ children }) => {
             localStorage.removeItem('sop_pin');
         }
 
-        if (familyId) {
+        if (familyId && isInitialized) {
             supabase
                 .from('families')
                 .update({ pin: pin })
@@ -238,7 +280,7 @@ export const DataProvider = ({ children }) => {
                     if (error) console.error("Sync PIN error", error);
                 });
         }
-    }, [pin, familyId]);
+    }, [pin, familyId, isInitialized]);
 
     useEffect(() => {
         localStorage.setItem('sop_actions', JSON.stringify(actions));
