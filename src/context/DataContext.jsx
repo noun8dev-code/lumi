@@ -114,7 +114,16 @@ export const DataProvider = ({ children }) => {
                     (payload) => {
                         if (payload.new) {
                             if (payload.new.kids) {
-                                setKids(payload.new.kids);
+                                let newKids = payload.new.kids;
+                                if (typeof newKids === 'string') {
+                                    try {
+                                        newKids = JSON.parse(newKids);
+                                    } catch (e) {
+                                        console.error("Failed to parse kids JSON", e);
+                                        newKids = [];
+                                    }
+                                }
+                                setKids(newKids);
                             }
                             // Sync PIN if it changes remotely
                             if (payload.new.pin !== undefined) {
@@ -172,7 +181,18 @@ export const DataProvider = ({ children }) => {
 
         if (data) {
             setFamilyId(id);
-            if (data.kids) setKids(data.kids);
+            if (data.kids) {
+                let loadedKids = data.kids;
+                if (typeof loadedKids === 'string') {
+                    try {
+                        loadedKids = JSON.parse(loadedKids);
+                    } catch (e) {
+                        console.error("Failed to parse kids JSON", e);
+                        loadedKids = [];
+                    }
+                }
+                setKids(loadedKids);
+            }
             if (data.pin) setPin(data.pin); // Load PIN from DB
             return true;
         }

@@ -34,6 +34,7 @@ const ChildDetail = () => {
     };
 
     const handleActionSelect = (actionId) => {
+        // alert('DEBUG: PIN is ' + pin); // Debugging
         if (pin) {
             setPendingAction({ type: 'log', payload: actionId });
             setPinModalOpen(true);
