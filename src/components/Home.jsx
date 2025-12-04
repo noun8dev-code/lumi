@@ -8,7 +8,7 @@ import PaymentModal from './PaymentModal';
 
 
 const Home = () => {
-    const { kids, addChild, theme, toggleTheme, pin, setAppPin, familyId, createFamily, joinFamily } = useData();
+    const { kids, addChild, removeChild, theme, toggleTheme, pin, setAppPin, familyId, createFamily, joinFamily } = useData();
     const [newChildName, setNewChildName] = useState('');
 
     const [pinModalOpen, setPinModalOpen] = useState(false);
@@ -71,6 +71,15 @@ const Home = () => {
         processAddChild();
     };
 
+    const handleDeleteChild = (e, childId, childName) => {
+        e.preventDefault(); // Prevent navigation
+        e.stopPropagation(); // Stop event bubbling
+
+        if (window.confirm(`Êtes-vous sûr de vouloir supprimer ${childName} ?`)) {
+            removeChild(childId);
+        }
+    };
+
 
 
     return (
@@ -125,6 +134,20 @@ const Home = () => {
                         <div className="kid-item" style={{ cursor: 'pointer', flexDirection: 'row', justifyContent: 'space-between', padding: '1.5rem 2rem' }}>
                             <h2 className="kid-name" style={{ margin: 0, fontSize: '1.5rem' }}>{kid.name}</h2>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <button
+                                    onClick={(e) => handleDeleteChild(e, kid.id, kid.name)}
+                                    style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        fontSize: '1.2rem',
+                                        cursor: 'pointer',
+                                        padding: '5px',
+                                        marginRight: '5px'
+                                    }}
+                                    title="Supprimer"
+                                >
+                                    🗑️
+                                </button>
                                 <span style={{ fontWeight: 'bold', color: kid.score >= 5 ? '#34c759' : '#ff3b30' }}>
                                     {kid.score}
                                 </span>
