@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useData } from '../context/DataContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import PinModal from './PinModal';
 import SyncModal from './SyncModal';
 import PaymentModal from './PaymentModal';
@@ -9,6 +9,7 @@ import PaymentModal from './PaymentModal';
 
 const Home = () => {
     const { kids, addChild, removeChild, theme, toggleTheme, pin, setAppPin, familyId, createFamily, joinFamily } = useData();
+    const navigate = useNavigate();
     const [newChildName, setNewChildName] = useState('');
 
     const [pinModalOpen, setPinModalOpen] = useState(false);
@@ -80,6 +81,10 @@ const Home = () => {
         }
     };
 
+    const handleNavigate = (id) => {
+        navigate(`/child/${id}`);
+    };
+
 
 
     return (
@@ -130,38 +135,41 @@ const Home = () => {
 
             <div className="kids-list-simple">
                 {kids.map(kid => (
-                    <Link key={kid.id} to={`/child/${kid.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                        <div className="kid-item" style={{ cursor: 'pointer', flexDirection: 'row', justifyContent: 'space-between', padding: '1.5rem 2rem' }}>
-                            <h2 className="kid-name" style={{ margin: 0, fontSize: '1.5rem' }}>{kid.name}</h2>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <button
-                                    onClick={(e) => handleDeleteChild(e, kid.id, kid.name)}
-                                    style={{
-                                        background: '#ff3b30',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '50%',
-                                        width: '36px',
-                                        height: '36px',
-                                        fontSize: '1rem',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        marginRight: '10px',
-                                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                                    }}
-                                    title="Supprimer"
-                                >
-                                    🗑️
-                                </button>
-                                <span style={{ fontWeight: 'bold', color: kid.score >= 5 ? '#34c759' : '#ff3b30' }}>
-                                    {kid.score}
-                                </span>
-                                <span style={{ color: '#86868b', fontSize: '1.2rem' }}>›</span>
-                            </div>
+                    <div
+                        key={kid.id}
+                        className="kid-item"
+                        onClick={() => handleNavigate(kid.id)}
+                        style={{ cursor: 'pointer', flexDirection: 'row', justifyContent: 'space-between', padding: '1.5rem 2rem' }}
+                    >
+                        <h2 className="kid-name" style={{ margin: 0, fontSize: '1.5rem' }}>{kid.name}</h2>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <button
+                                onClick={(e) => handleDeleteChild(e, kid.id, kid.name)}
+                                style={{
+                                    background: '#ff3b30',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '50%',
+                                    width: '36px',
+                                    height: '36px',
+                                    fontSize: '1rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    marginRight: '10px',
+                                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                                }}
+                                title="Supprimer"
+                            >
+                                🗑️
+                            </button>
+                            <span style={{ fontWeight: 'bold', color: kid.score >= 5 ? '#34c759' : '#ff3b30' }}>
+                                {kid.score}
+                            </span>
+                            <span style={{ color: '#86868b', fontSize: '1.2rem' }}>›</span>
                         </div>
-                    </Link>
+                    </div>
                 ))}
             </div>
 
