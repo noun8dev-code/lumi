@@ -180,24 +180,22 @@ export const DataProvider = ({ children }) => {
             .single();
 
         if (data) {
-            alert("DEBUG: Famille trouvée ! Données reçues : " + JSON.stringify(data));
             setFamilyId(id);
             if (data.kids) {
                 let loadedKids = data.kids;
-                alert("DEBUG: Type de kids : " + typeof loadedKids);
                 if (typeof loadedKids === 'string') {
                     try {
                         loadedKids = JSON.parse(loadedKids);
-                        alert("DEBUG: Kids après parsing : " + JSON.stringify(loadedKids));
                     } catch (e) {
                         console.error("Failed to parse kids JSON", e);
-                        alert("ERREUR: Impossible de lire les données des enfants. " + e.message);
                         loadedKids = [];
                     }
                 }
-                setKids(loadedKids);
-            } else {
-                alert("DEBUG: Pas d'enfants dans cette famille (data.kids est vide)");
+                if (Array.isArray(loadedKids)) {
+                    setKids(loadedKids);
+                } else {
+                    console.error("ERREUR: Les données reçues ne sont pas une liste valide.");
+                }
             }
             if (data.pin) setPin(data.pin); // Load PIN from DB
             return true;
