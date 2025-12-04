@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const PinModal = ({ isOpen, onClose, onSuccess, title, correctPin, setMode = false }) => {
+const PinModal = ({ isOpen, onClose, onSuccess, title, correctPin, setMode = false, closeOnSuccess = true }) => {
     const [inputPin, setInputPin] = useState('');
     const [error, setError] = useState('');
 
@@ -20,11 +20,11 @@ const PinModal = ({ isOpen, onClose, onSuccess, title, correctPin, setMode = fal
                 // Auto submit when 4 digits entered
                 if (setMode) {
                     onSuccess(newPin);
-                    onClose();
+                    if (closeOnSuccess) onClose();
                 } else {
                     if (newPin === correctPin) {
                         onSuccess();
-                        onClose();
+                        if (closeOnSuccess) onClose();
                     } else {
                         setError('Code incorrect');
                         setTimeout(() => {

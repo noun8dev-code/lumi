@@ -11,11 +11,28 @@ const Home = () => {
     const [newChildName, setNewChildName] = useState('');
 
     const [pinModalOpen, setPinModalOpen] = useState(false);
+    const [pinStep, setPinStep] = useState('check'); // 'check' | 'set'
     const [syncModalOpen, setSyncModalOpen] = useState(false);
 
+    const handlePinClick = () => {
+        if (pin) {
+            setPinStep('check');
+        } else {
+            setPinStep('set');
+        }
+        setPinModalOpen(true);
+    };
+
     const handlePinSuccess = (newPin) => {
-        setAppPin(newPin);
-        alert('Code PIN défini avec succès !');
+        if (pinStep === 'check') {
+            // Verification successful, move to set new pin
+            setPinStep('set');
+        } else {
+            // Setting new pin
+            setAppPin(newPin);
+            setPinModalOpen(false);
+            alert('Code PIN enregistré avec succès !');
+        }
     };
 
     const handleAddChild = () => {
@@ -29,77 +46,37 @@ const Home = () => {
 
     return (
         <div className="dashboard-simple">
-            <header className="simple-header">
-                <div style={{ position: 'absolute', top: '2rem', right: '2rem', display: 'flex', gap: '10px' }}>
+            <div className="ios-header">
+                <div className="header-actions">
                     <button
-                        onClick={() => setPinModalOpen(true)}
-                        style={{
-                            background: pin ? 'transparent' : 'var(--accent-color)',
-                            border: pin ? '1px solid var(--border-color)' : 'none',
-                            fontSize: pin ? '1.5rem' : '1rem',
-                            cursor: 'pointer',
-                            padding: pin ? '0.5rem' : '0.5rem 1rem',
-                            borderRadius: '12px',
-                            transition: 'transform 0.2s',
-                            color: pin ? 'var(--text-color)' : '#fff',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: pin ? 'normal' : '600'
-                        }}
-                        title="Paramètres (Code PIN)"
-                        onMouseEnter={e => e.target.style.transform = 'scale(1.05)'}
-                        onMouseLeave={e => e.target.style.transform = 'scale(1)'}
+                        className={`icon-btn ${!pin ? 'pulse-action' : ''}`}
+                        onClick={handlePinClick}
+                        title={pin ? "Paramètres PIN" : "Définir PIN"}
                     >
-                        {pin ? '⚙️' : '🔒 Définir Code PIN'}
+                        {pin ? '⚙️' : '🔒'}
                     </button>
                     <button
+                        className="icon-btn"
                         onClick={() => setSyncModalOpen(true)}
-                        style={{
-                            background: 'transparent',
-                            border: '1px solid var(--border-color)',
-                            fontSize: '1.5rem',
-                            cursor: 'pointer',
-                            padding: '0.5rem',
-                            borderRadius: '12px',
-                            transition: 'transform 0.2s',
-                            color: 'var(--text-color)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}
                         title="Synchronisation"
-                        onMouseEnter={e => e.target.style.transform = 'scale(1.05)'}
-                        onMouseLeave={e => e.target.style.transform = 'scale(1)'}
                     >
                         ☁️
                     </button>
                     <button
+                        className="icon-btn"
                         onClick={toggleTheme}
-                        style={{
-                            background: 'transparent',
-                            border: '1px solid var(--border-color)',
-                            fontSize: '1rem',
-                            cursor: 'pointer',
-                            padding: '0.5rem 1rem',
-                            borderRadius: '12px',
-                            transition: 'transform 0.2s',
-                            color: 'var(--text-color)',
-                            fontWeight: '500'
-                        }}
-                        onMouseEnter={e => e.target.style.transform = 'scale(1.05)'}
-                        onMouseLeave={e => e.target.style.transform = 'scale(1)'}
+                        title="Changer de thème"
                     >
-                        {theme === 'light' ? 'Mode Sombre' : 'Mode Clair'}
+                        {theme === 'light' ? '🌙' : '☀️'}
                     </button>
                 </div>
 
-                <h1>Sage ou Pas ?</h1>
-                <p>Suivez le comportement des enfants.</p>
+                <div className="title-section">
+                    <h1>Sage ou Pas ?</h1>
+                    <p>Suivi du comportement</p>
+                </div>
 
-
-
-                <div className="add-bar">
+                <div className="ios-input-group">
                     <input
                         type="text"
                         placeholder="Ajouter un enfant..."
@@ -107,9 +84,11 @@ const Home = () => {
                         onChange={(e) => setNewChildName(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleAddChild()}
                     />
-                    <button onClick={handleAddChild}>+</button>
+                    <button onClick={handleAddChild} className="add-btn">
+                        <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>+</span>
+                    </button>
                 </div>
-            </header>
+            </div>
 
             <div className="kids-list-simple">
                 {kids.map(kid => (
@@ -128,11 +107,14 @@ const Home = () => {
             </div>
 
             <PinModal
+                key={pinStep} // Force re-render when step changes
                 isOpen={pinModalOpen}
                 onClose={() => setPinModalOpen(false)}
                 onSuccess={handlePinSuccess}
-                title={pin ? "Changer le code PIN" : "Définir un code PIN"}
-                setMode={true}
+                title={pinStep === 'check' ? "Entrez le code actuel" : "Définir le nouveau code"}
+                setMode={pinStep === 'set'}
+                correctPin={pin}
+                closeOnSuccess={pinStep !== 'check'}
             />
 
             <SyncModal
