@@ -1,23 +1,62 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import confetti from 'canvas-confetti';
 import { useData } from '../context/DataContext';
 import { playPositive, playNegative, playVictory } from '../utils/sounds';
 import EvolutionChart from './EvolutionChart';
 import PinModal from './PinModal';
+import WeeklyRecapModal from './WeeklyRecapModal';
 
 const ChildDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { kids, logAction, actions, validateWeek, pin } = useData();
+    const { kids, logAction, actions, validateWeek, pin, logs } = useData();
 
     // Find the child
     const kid = kids.find(k => k.id === id);
+    const prevScoreRef = useRef(kid?.score);
+    const [lightning, setLightning] = useState(false);
+
+    // Confetti & Lightning Effect
+    useEffect(() => {
+        if (kid) {
+            const currentScore = kid.score;
+            const prevScore = prevScoreRef.current;
+
+            // Initialize ref if undefined
+            if (prevScore === undefined) {
+                prevScoreRef.current = currentScore;
+                return;
+            }
+
+            // Only trigger if score is high AND it has increased
+            if (currentScore > 9 && currentScore > prevScore) {
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+            // Trigger lightning if score DECREASED
+            else if (currentScore < prevScore) {
+                setLightning(true);
+                setTimeout(() => setLightning(false), 500);
+            }
+            // Update previous score
+            prevScoreRef.current = currentScore;
+        }
+    }, [kid?.score]);
 
     // Modal State
     const [modalOpen, setModalOpen] = useState(false);
     const [actionType, setActionType] = useState(null); // 'good' or 'bad'
     const [pinModalOpen, setPinModalOpen] = useState(false);
-    const [pendingAction, setPendingAction] = useState(null); // { type: 'log' | 'validate', payload: ... }
+    const [pendingAction, setPendingAction] = useState(null); // { type: 'log' | 'validate' | 'log-batch', payload: ... }
+    const [recapModalOpen, setRecapModalOpen] = useState(false);
+
+    // Multi-Select State
+    const [isMultiSelect, setIsMultiSelect] = useState(false);
+    const [selectedActions, setSelectedActions] = useState(new Set());
 
     if (!kid) {
         return (
@@ -31,6 +70,27 @@ const ChildDetail = () => {
     const openActionModal = (type) => {
         setActionType(type);
         setModalOpen(true);
+        // Reset multi-select on open
+        setIsMultiSelect(false);
+        setSelectedActions(new Set());
+    };
+
+    const toggleActionSelection = (actionId) => {
+        const newSelection = new Set(selectedActions);
+        if (newSelection.has(actionId)) {
+            newSelection.delete(actionId);
+        } else {
+            newSelection.add(actionId);
+        }
+        setSelectedActions(newSelection);
+    };
+
+    const handleActionClick = (actionId) => {
+        if (isMultiSelect) {
+            toggleActionSelection(actionId);
+        } else {
+            handleActionSelect(actionId);
+        }
     };
 
     const handleActionSelect = (actionId) => {
@@ -45,6 +105,36 @@ const ChildDetail = () => {
         }
     };
 
+    const handleBatchSubmit = () => {
+        if (selectedActions.size === 0) return;
+
+        const actionsToLog = Array.from(selectedActions);
+
+        if (pin) {
+            setPendingAction({ type: 'log-batch', payload: actionsToLog });
+            setPinModalOpen(true);
+            setModalOpen(false);
+        } else {
+            executeBatchLog(actionsToLog);
+            setModalOpen(false);
+        }
+    };
+
+    const executeBatchLog = (actionIds) => {
+        // Calculate total value for sound effect
+        let totalValue = 0;
+        actionIds.forEach(id => {
+            const action = actions.find(a => a.id === id);
+            if (action) totalValue += action.value;
+            logAction(kid.id, id);
+        });
+
+        if (totalValue > 0) playPositive();
+        else if (totalValue < 0) playNegative();
+
+        setActionType(null);
+    };
+
     const executeLogAction = (actionId) => {
         const action = actions.find(a => a.id === actionId);
         if (action) {
@@ -56,13 +146,17 @@ const ChildDetail = () => {
     };
 
     const handleValidateWeek = () => {
-        if (window.confirm("Es-tu sûr de vouloir valider la semaine ? Le score reviendra à 10.")) {
-            if (pin) {
-                setPendingAction({ type: 'validate' });
-                setPinModalOpen(true);
-            } else {
-                executeValidateWeek();
-            }
+        // Open Recap Modal instead of window.confirm
+        setRecapModalOpen(true);
+    };
+
+    const handleConfirmValidateWeek = () => {
+        setRecapModalOpen(false); // Close recap
+        if (pin) {
+            setPendingAction({ type: 'validate' });
+            setPinModalOpen(true);
+        } else {
+            executeValidateWeek();
         }
     };
 
@@ -77,6 +171,8 @@ const ChildDetail = () => {
                 executeLogAction(pendingAction.payload);
             } else if (pendingAction.type === 'validate') {
                 executeValidateWeek();
+            } else if (pendingAction.type === 'log-batch') {
+                executeBatchLog(pendingAction.payload);
             }
             setPendingAction(null);
         }
@@ -87,6 +183,8 @@ const ChildDetail = () => {
 
     // Friday Check
     const isFriday = new Date().getDay() === 5;
+    // Saturday Check
+    const isSaturday = new Date().getDay() === 6;
 
     const getActionColor = (id) => {
         if (id.startsWith('school')) return '#e8f5e9'; // Green
@@ -123,7 +221,8 @@ const ChildDetail = () => {
 
 
     return (
-        <div className="dashboard-simple">
+        <div className={`dashboard-simple ${lightning ? 'shake-effect' : ''}`}>
+            {lightning && <div className="lightning-flash"></div>}
             <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Link to="/" style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '1.1rem', fontWeight: '500' }}>
                     ‹ Retour
@@ -131,6 +230,21 @@ const ChildDetail = () => {
             </div>
 
             <div className="kid-item" style={{ transform: 'none', cursor: 'default' }}>
+                {kid.avatar && (
+                    <img
+                        src={kid.avatar}
+                        alt={kid.name}
+                        style={{
+                            width: '120px',
+                            height: '120px',
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '4px solid white',
+                            boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
+                            marginBottom: '1rem'
+                        }}
+                    />
+                )}
                 <h1 className="kid-name" style={{ fontSize: '3rem', marginBottom: '1rem' }}>{kid.name}</h1>
 
                 <div className="kid-status">
@@ -143,19 +257,42 @@ const ChildDetail = () => {
 
                 {isFriday && (
                     <div style={{
-                        background: '#FFF9C4', // Light yellow
-                        color: '#F57F17', // Dark orange/yellow text
-                        padding: '1.5rem',
-                        borderRadius: '16px',
+                        background: 'linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 100%)', // Pastel Pink to Blue
+                        color: '#555', // Soft dark gray
+                        padding: '2rem',
+                        borderRadius: '24px',
                         textAlign: 'center',
-                        fontWeight: 'bold',
-                        fontSize: '1.5rem',
+                        fontWeight: '800',
+                        fontSize: '1.8rem',
                         marginBottom: '2rem',
-                        border: '2px solid #FBC02D',
-                        boxShadow: '0 4px 15px rgba(251, 192, 45, 0.2)',
-                        animation: 'pulse 2s infinite'
+                        border: '4px solid #fff', // White border for "sticker" look
+                        boxShadow: '0 10px 30px rgba(181, 255, 252, 0.5)',
+                        animation: 'pulse 3s infinite ease-in-out',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px'
                     }}>
                         N'oubliez pas la récompense !!!
+                    </div>
+                )}
+
+                {isSaturday && (
+                    <div style={{
+                        background: kid.score >= 8
+                            ? 'linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%)' // Greenish for good
+                            : 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)', // Reddish for bad
+                        color: '#555',
+                        padding: '2rem',
+                        borderRadius: '24px',
+                        textAlign: 'center',
+                        fontWeight: '800',
+                        fontSize: '1.8rem',
+                        marginBottom: '2rem',
+                        border: '4px solid #fff',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px'
+                    }}>
+                        {kid.score >= 8 ? "C'est l'heure de la récompense" : "Pas de récompense"}
                     </div>
                 )}
 
@@ -217,10 +354,31 @@ const ChildDetail = () => {
             {modalOpen && (
                 <div className="modal-overlay" onClick={() => setModalOpen(false)}>
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <h3>
-                            {actionType === 'good' ? 'Quelle bonne action ?' : 'Quelle bêtise ?'}
-                        </h3>
-                        <div className="action-options" style={{ display: 'block' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ margin: 0 }}>
+                                {actionType === 'good' ? 'Quelle bonne action ?' : 'Quelle bêtise ?'}
+                            </h3>
+                            <div
+                                onClick={() => {
+                                    setIsMultiSelect(!isMultiSelect);
+                                    setSelectedActions(new Set());
+                                }}
+                                style={{
+                                    cursor: 'pointer',
+                                    padding: '8px 16px',
+                                    borderRadius: '20px',
+                                    background: isMultiSelect ? 'var(--accent-color)' : '#eee',
+                                    color: isMultiSelect ? 'white' : '#555',
+                                    fontSize: '0.9rem',
+                                    fontWeight: '600',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {isMultiSelect ? '✓ Choix Multiple ON' : 'Choix Multiple'}
+                            </div>
+                        </div>
+
+                        <div className="action-options" style={{ display: 'block', maxHeight: '60vh', overflowY: 'auto' }}>
                             {categoryOrder.map(category => {
                                 if (!groupedActions[category]) return null;
                                 return (
@@ -236,40 +394,69 @@ const ChildDetail = () => {
                                             {category}
                                         </h4>
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px' }}>
-                                            {groupedActions[category].map(action => (
-                                                <button
-                                                    key={action.id}
-                                                    className="action-option-btn"
-                                                    onClick={() => handleActionSelect(action.id)}
-                                                    style={{
-                                                        background: getActionColor(action.id),
-                                                        color: '#333',
-                                                        border: '1px solid rgba(0,0,0,0.1)',
-                                                        width: '100%',
-                                                        margin: 0,
-                                                        display: 'flex',
-                                                        justifyContent: 'space-between',
-                                                        alignItems: 'center',
-                                                        padding: '15px'
-                                                    }}
-                                                >
-                                                    <span style={{ textAlign: 'left', flex: 1, fontSize: '0.9rem' }}>{action.label}</span>
-                                                    <span style={{
-                                                        fontSize: '1.2rem',
-                                                        fontWeight: 'bold',
-                                                        marginLeft: '10px',
-                                                        color: action.value > 0 ? '#2e7d32' : '#c62828'
-                                                    }}>
-                                                        {action.value > 0 ? '+' + action.value : action.value}
-                                                    </span>
-                                                </button>
-                                            ))}
+                                            {groupedActions[category].map(action => {
+                                                const isSelected = selectedActions.has(action.id);
+                                                return (
+                                                    <button
+                                                        key={action.id}
+                                                        className="action-option-btn"
+                                                        onClick={() => handleActionClick(action.id)}
+                                                        style={{
+                                                            background: isSelected ? 'var(--accent-color)' : getActionColor(action.id),
+                                                            color: isSelected ? 'white' : '#333',
+                                                            border: isSelected ? '2px solid var(--accent-color)' : '1px solid rgba(0,0,0,0.1)',
+                                                            width: '100%',
+                                                            margin: 0,
+                                                            display: 'flex',
+                                                            justifyContent: 'space-between',
+                                                            alignItems: 'center',
+                                                            padding: '15px',
+                                                            transform: isSelected ? 'scale(0.98)' : 'none',
+                                                            transition: 'all 0.1s'
+                                                        }}
+                                                    >
+                                                        <span style={{ textAlign: 'left', flex: 1, fontSize: '0.9rem' }}>{action.label}</span>
+                                                        <span style={{
+                                                            fontSize: '1.2rem',
+                                                            fontWeight: 'bold',
+                                                            marginLeft: '10px',
+                                                            color: isSelected ? 'white' : (action.value > 0 ? '#2e7d32' : '#c62828')
+                                                        }}>
+                                                            {action.value > 0 ? '+' + action.value : action.value}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
-                        <button className="close-modal" onClick={() => setModalOpen(false)}>Annuler</button>
+
+                        {isMultiSelect ? (
+                            <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
+                                <button className="close-modal" onClick={() => setModalOpen(false)} style={{ flex: 1 }}>Annuler</button>
+                                <button
+                                    onClick={handleBatchSubmit}
+                                    disabled={selectedActions.size === 0}
+                                    style={{
+                                        flex: 2,
+                                        background: selectedActions.size > 0 ? 'var(--accent-color)' : '#ccc',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '15px',
+                                        borderRadius: '12px',
+                                        fontSize: '1.1rem',
+                                        fontWeight: 'bold',
+                                        cursor: selectedActions.size > 0 ? 'pointer' : 'not-allowed'
+                                    }}
+                                >
+                                    Valider ({selectedActions.size})
+                                </button>
+                            </div>
+                        ) : (
+                            <button className="close-modal" onClick={() => setModalOpen(false)}>Annuler</button>
+                        )}
                     </div>
                 </div>
             )}
@@ -282,6 +469,15 @@ const ChildDetail = () => {
                 }}
                 onSuccess={handlePinSuccess}
                 correctPin={pin}
+            />
+
+            <WeeklyRecapModal
+                isOpen={recapModalOpen}
+                onClose={() => setRecapModalOpen(false)}
+                onConfirm={handleConfirmValidateWeek}
+                kid={kid}
+                logs={logs}
+                actions={actions}
             />
         </div>
     );

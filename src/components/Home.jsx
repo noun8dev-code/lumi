@@ -12,11 +12,7 @@ const Home = () => {
     const navigate = useNavigate();
     const [newChildName, setNewChildName] = useState('');
 
-    const [pinModalOpen, setPinModalOpen] = useState(false);
-    const [pinStep, setPinStep] = useState('check'); // 'check' | 'set'
-    const [syncModalOpen, setSyncModalOpen] = useState(false);
-    const [pendingChildName, setPendingChildName] = useState(null);
-    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+    const [newChildImage, setNewChildImage] = useState(null);
 
     const handlePinClick = () => {
         setPendingChildName(null);
@@ -31,8 +27,9 @@ const Home = () => {
     const handlePinSuccess = (newPin) => {
         if (pendingChildName) {
             // PIN verified for adding child
-            addChild(pendingChildName);
+            addChild(pendingChildName, newChildImage);
             setNewChildName('');
+            setNewChildImage(null);
             setPendingChildName(null);
             setPinModalOpen(false);
         } else if (pinStep === 'check') {
@@ -52,8 +49,9 @@ const Home = () => {
             setPinStep('check');
             setPinModalOpen(true);
         } else {
-            addChild(newChildName.trim());
+            addChild(newChildName.trim(), newChildImage);
             setNewChildName('');
+            setNewChildImage(null);
         }
     };
 
@@ -85,6 +83,16 @@ const Home = () => {
         navigate(`/child/${id}`);
     };
 
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setNewChildImage(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
 
     return (
@@ -120,6 +128,20 @@ const Home = () => {
                 </div>
 
                 <div className="ios-input-group">
+                    <label htmlFor="child-image-upload" className="icon-btn" style={{ background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginRight: '10px' }}>
+                        {newChildImage ? (
+                            <img src={newChildImage} alt="Aperçu" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                        ) : (
+                            '📸'
+                        )}
+                    </label>
+                    <input
+                        id="child-image-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        style={{ display: 'none' }}
+                    />
                     <input
                         type="text"
                         placeholder="Ajouter un enfant..."
@@ -141,7 +163,16 @@ const Home = () => {
                         onClick={() => handleNavigate(kid.id)}
                         style={{ cursor: 'pointer', flexDirection: 'row', justifyContent: 'space-between', padding: '1.5rem 2rem' }}
                     >
-                        <h2 className="kid-name" style={{ margin: 0, fontSize: '1.5rem' }}>{kid.name}</h2>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            {kid.avatar && (
+                                <img
+                                    src={kid.avatar}
+                                    alt={kid.name}
+                                    style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover', border: '2px solid white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}
+                                />
+                            )}
+                            <h2 className="kid-name" style={{ margin: 0, fontSize: '1.5rem' }}>{kid.name}</h2>
+                        </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                             <button
                                 onClick={(e) => handleDeleteChild(e, kid.id, kid.name)}

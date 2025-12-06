@@ -6,52 +6,68 @@ const DataContext = createContext();
 const INITIAL_ACTIONS = [
     // --- ÉCOLE & DEVOIRS ---
     { id: 'school_1', label: 'A fait ses devoirs', type: 'good', value: 1.0 },
-    { id: 'school_2', label: 'A eu une bonne note', type: 'good', value: 2.0 }, // Bonus ++
+    { id: 'school_2', label: 'A eu une bonne note', type: 'good', value: 2.0 },
     { id: 'school_3', label: 'A préparé son cartable', type: 'good', value: 0.5 },
-    { id: 'school_4', label: 'A eu un bon comportement à l\'école', type: 'good', value: 1.0 },
-    { id: 'school_bad_1', label: 'A eu un mot dans le carnet', type: 'bad', value: -2.0 }, // Grave
+    { id: 'school_4', label: 'A eu un bon comportement', type: 'good', value: 1.0 },
+    { id: 'school_5', label: 'A bien participé en classe', type: 'good', value: 0.5 },
+    { id: 'school_6', label: 'A écouté la maîtresse', type: 'good', value: 0.5 },
+    { id: 'school_7', label: 'A lu un livre', type: 'good', value: 1.0 },
+    { id: 'school_bad_1', label: 'A eu un mot dans le carnet', type: 'bad', value: -2.0 },
     { id: 'school_bad_2', label: 'A oublié ses affaires', type: 'bad', value: -0.5 },
     { id: 'school_bad_3', label: 'N\'a pas fait ses devoirs', type: 'bad', value: -1.0 },
+    { id: 'school_bad_4', label: 'A bavardé en classe', type: 'bad', value: -0.5 },
+    { id: 'school_bad_5', label: 'Est arrivé en retard', type: 'bad', value: -0.5 },
 
     // --- MAISON & TÂCHES ---
-    { id: 'home_1', label: 'A rangé sa chambre', type: 'good', value: 1.0 }, // Effort important
+    { id: 'home_1', label: 'A rangé sa chambre', type: 'good', value: 1.0 },
     { id: 'home_2', label: 'A fait son lit', type: 'good', value: 0.5 },
     { id: 'home_3', label: 'A mis la table', type: 'good', value: 0.5 },
     { id: 'home_4', label: 'A débarrassé la table', type: 'good', value: 0.5 },
     { id: 'home_5', label: 'A vidé le lave-vaisselle', type: 'good', value: 1.0 },
     { id: 'home_6', label: 'A sorti la poubelle', type: 'good', value: 1.0 },
     { id: 'home_7', label: 'A rangé ses jouets', type: 'good', value: 0.5 },
+    { id: 'home_8', label: 'A aidé à cuisiner', type: 'good', value: 1.0 },
+    { id: 'home_9', label: 'A arrosé les plantes', type: 'good', value: 0.5 },
+    { id: 'home_10', label: 'A plié son linge', type: 'good', value: 1.0 },
     { id: 'home_bad_1', label: 'A laissé traîner ses affaires', type: 'bad', value: -0.5 },
     { id: 'home_bad_2', label: 'A cassé quelque chose', type: 'bad', value: -1.0 },
     { id: 'home_bad_3', label: 'A sali la maison', type: 'bad', value: -0.5 },
+    { id: 'home_bad_4', label: 'N\'a pas éteint la lumière', type: 'bad', value: -0.5 },
+    { id: 'home_bad_5', label: 'A claqué une porte', type: 'bad', value: -0.5 },
 
-    // --- COMPORTEMENT & PARENTS ---
+    // --- COMPORTEMENT & FAMILLE ---
     { id: 'behav_1', label: 'A obéi tout de suite', type: 'good', value: 1.0 },
-    { id: 'behav_2', label: 'A aidé Papa/Maman', type: 'good', value: 1.5 }, // Très bien
+    { id: 'behav_2', label: 'A aidé Papa/Maman', type: 'good', value: 1.5 },
     { id: 'behav_3', label: 'N\'a pas fait répéter', type: 'good', value: 0.5 },
-    { id: 'behav_4', label: 'A été poli(e) (Bonjour/Merci)', type: 'good', value: 0.5 },
+    { id: 'behav_4', label: 'A été poli(e)', type: 'good', value: 0.5 },
     { id: 'behav_5', label: 'A fait un câlin', type: 'good', value: 0.5 },
     { id: 'behav_6', label: 'A joué calmement', type: 'good', value: 0.5 },
-    { id: 'behav_7', label: 'A partagé avec frère/soeur', type: 'good', value: 1.0 },
+    { id: 'behav_7', label: 'A partagé', type: 'good', value: 1.0 },
+    { id: 'behav_8', label: 'A dit la vérité (courage)', type: 'good', value: 1.0 },
+    { id: 'behav_9', label: 'A demandé pardon', type: 'good', value: 0.5 },
     { id: 'behav_bad_1', label: 'A fait crier Papa/Maman', type: 'bad', value: -1.5 },
     { id: 'behav_bad_2', label: 'A obligé à répéter', type: 'bad', value: -0.5 },
-    { id: 'behav_bad_3', label: 'A répondu / insolent', type: 'bad', value: -2.0 }, // Très grave
+    { id: 'behav_bad_3', label: 'A répondu / insolent', type: 'bad', value: -2.0 },
     { id: 'behav_bad_4', label: 'A fait une colère', type: 'bad', value: -1.0 },
-    { id: 'behav_bad_5', label: 'A tapé / mordu', type: 'bad', value: -3.0 }, // Inacceptable
-    { id: 'behav_bad_6', label: 'A menti', type: 'bad', value: -2.0 }, // Grave
+    { id: 'behav_bad_5', label: 'A tapé / mordu', type: 'bad', value: -3.0 },
+    { id: 'behav_bad_6', label: 'A menti', type: 'bad', value: -2.0 },
     { id: 'behav_bad_7', label: 'A dit des gros mots', type: 'bad', value: -1.0 },
     { id: 'behav_bad_8', label: 'A crié', type: 'bad', value: -0.5 },
-    { id: 'behav_bad_9', label: 'S\'est battu', type: 'bad', value: -3.0 }, // Inacceptable
+    { id: 'behav_bad_9', label: 'S\'est battu', type: 'bad', value: -3.0 },
+    { id: 'behav_bad_10', label: 'A fait un caprice', type: 'bad', value: -1.0 },
+    { id: 'behav_bad_11', label: 'A coupé la parole', type: 'bad', value: -0.5 },
 
-    // --- HYGIÈNE & REPAS ---
+    // --- HYGIÈNE & SOINS ---
     { id: 'hyg_1', label: 'S\'est brossé les dents', type: 'good', value: 0.5 },
-    { id: 'hyg_2', label: 'A pris sa douche sans râler', type: 'good', value: 0.5 },
-    { id: 'hyg_3', label: 'S\'est habillé(e) tout seul', type: 'good', value: 0.5 },
-    { id: 'hyg_4', label: 'A mangé ses légumes', type: 'good', value: 1.0 }, // Important
+    { id: 'hyg_2', label: 'A pris sa douche calme', type: 'good', value: 0.5 },
+    { id: 'hyg_3', label: 'S\'est habillé(e) seul', type: 'good', value: 0.5 },
+    { id: 'hyg_4', label: 'A mangé ses légumes', type: 'good', value: 1.0 },
     { id: 'hyg_5', label: 'A fini son assiette', type: 'good', value: 0.5 },
+    { id: 'hyg_6', label: 'S\'est lavé les mains', type: 'good', value: 0.5 },
     { id: 'hyg_bad_1', label: 'A refusé de manger', type: 'bad', value: -1.0 },
     { id: 'hyg_bad_2', label: 'A refusé d\'aller au lit', type: 'bad', value: -1.0 },
     { id: 'hyg_bad_3', label: 'Ne s\'est pas lavé les mains', type: 'bad', value: -0.5 },
+    { id: 'hyg_bad_4', label: 'A mis les coudes sur la table', type: 'bad', value: -0.5 },
 ];
 
 export const DataProvider = ({ children }) => {
@@ -290,10 +306,11 @@ export const DataProvider = ({ children }) => {
         localStorage.setItem('sop_logs', JSON.stringify(logs));
     }, [logs]);
 
-    const addChild = (name) => {
+    const addChild = (name, image = null) => {
         const newKid = {
             id: Date.now().toString(),
             name,
+            avatar: image, // Store Base64 image
             score: 10, // Start at 10
             history: [], // Initialize history
         };
@@ -316,6 +333,9 @@ export const DataProvider = ({ children }) => {
             }
             return kid;
         }));
+
+        // Clear logs for this child (start fresh for new week)
+        setLogs(logs.filter(l => l.childId !== childId));
     };
 
     const addAction = (label, type, value) => {
