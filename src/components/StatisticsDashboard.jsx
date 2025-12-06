@@ -2,7 +2,7 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
-const StatisticsModal = ({ isOpen, onClose, logs, actions }) => {
+const StatisticsDashboard = ({ isOpen, onClose, logs, actions }) => {
     if (!isOpen) return null;
 
     // Helper: Category Logic (Duplicated for now, ideal to refactor later)
@@ -225,4 +225,4 @@ const StatisticsModal = ({ isOpen, onClose, logs, actions }) => {
     );
 };
 
-export default StatisticsModal;
+export default StatisticsDashboard;

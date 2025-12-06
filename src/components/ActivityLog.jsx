@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ActivityLog = ({ logs, actions, childId }) => {
+const ActivityLog = ({ logs, actions, childId, onDelete }) => {
     const childLogs = logs
         .filter(log => log.childId === childId)
         .sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -181,6 +181,28 @@ const ActivityLog = ({ logs, actions, childId }) => {
                                     }}>
                                         {value > 0 ? `+${value}` : value}
                                     </div>
+
+                                    {/* Delete Button */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onDelete) onDelete(log.id);
+                                        }}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            padding: '8px',
+                                            marginLeft: '5px',
+                                            opacity: 0.6,
+                                            transition: 'opacity 0.2s',
+                                            fontSize: '1.2rem'
+                                        }}
+                                        className="delete-btn"
+                                        title="Supprimer cette action"
+                                    >
+                                        🗑️
+                                    </button>
                                 </div>
                             </div>
                         );

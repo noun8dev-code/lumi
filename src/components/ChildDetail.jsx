@@ -11,12 +11,12 @@ import EvolutionChart from './EvolutionChart';
 
 import PinModal from './PinModal';
 import WeeklyRecapModal from './WeeklyRecapModal';
-import StatisticsModal from './StatisticsModal';
+import StatisticsDashboard from './StatisticsDashboard';
 
 const ChildDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { kids, logAction, actions, validateWeek, pin, logs, addAction } = useData();
+    const { kids, logAction, actions, validateWeek, pin, logs, addAction, deleteLog, deleteAction } = useData();
 
     // Find the child
     const kid = kids.find(k => k.id === id);
@@ -152,6 +152,32 @@ const ChildDetail = () => {
         setActionType(null);
     };
 
+    const executeDeleteLog = (logId) => {
+        deleteLog(logId);
+    };
+
+    const handleDeleteLogRequest = (logId) => {
+        if (pin) {
+            setPendingAction({ type: 'delete-log', payload: logId });
+            setPinModalOpen(true);
+        } else {
+            if (window.confirm("Supprimer cet historique ?")) {
+                executeDeleteLog(logId);
+            }
+        }
+    };
+
+    const handleDeleteDefinition = (actionId) => {
+        if (pin) {
+            setPendingAction({ type: 'delete-action-def', payload: actionId });
+            setPinModalOpen(true);
+        } else {
+            if (window.confirm("Supprimer cette action ?")) {
+                deleteAction(actionId);
+            }
+        }
+    };
+
     const handleValidateWeek = () => {
         // Open Recap Modal instead of window.confirm
         setRecapModalOpen(true);
@@ -173,19 +199,31 @@ const ChildDetail = () => {
     };
 
     const handlePinSuccess = () => {
-        if (pendingAction) {
-            if (pendingAction.type === 'log') {
+        if (!pendingAction) return;
+
+        switch (pendingAction.type) {
+            case 'log':
                 executeLogAction(pendingAction.payload);
-            } else if (pendingAction.type === 'validate') {
-                executeValidateWeek();
-            } else if (pendingAction.type === 'log-batch') {
+                break;
+            case 'log-batch':
                 executeBatchLog(pendingAction.payload);
-            }
-            setPendingAction(null);
+                break;
+            case 'validate':
+                executeValidateWeek();
+                break;
+            case 'delete-log':
+                executeDeleteLog(pendingAction.payload);
+                break;
+            case 'delete-action-def':
+                deleteAction(pendingAction.payload);
+                break;
+            default:
+                break;
         }
+        setPendingAction(null);
+        setPinModalOpen(false);
     };
 
-    // Filter actions for the modal
     const modalActions = actions.filter(a => a.type === actionType);
 
     // Friday Check
@@ -398,7 +436,7 @@ const ChildDetail = () => {
                     </div>
                 </div>
 
-                <ActivityLog logs={logs} actions={actions} childId={kid.id} />
+                <ActivityLog logs={logs} actions={actions} childId={kid.id} onDelete={handleDeleteLogRequest} />
 
                 <div style={{ marginBottom: '2rem', width: '100%' }}>
                     <EvolutionChart history={kid.history} />
@@ -452,34 +490,60 @@ const ChildDetail = () => {
                                                 {groupedActions[category].map(action => {
                                                     const isSelected = selectedActions.has(action.id);
                                                     return (
-                                                        <button
-                                                            key={action.id}
-                                                            className="action-option-btn"
-                                                            onClick={() => handleActionClick(action.id)}
-                                                            style={{
-                                                                background: isSelected ? 'var(--accent-color)' : getActionColor(action.id),
-                                                                color: isSelected ? 'white' : '#333',
-                                                                border: isSelected ? '2px solid var(--accent-color)' : '1px solid rgba(0,0,0,0.1)',
-                                                                width: '100%',
-                                                                margin: 0,
-                                                                display: 'flex',
-                                                                justifyContent: 'space-between',
-                                                                alignItems: 'center',
-                                                                padding: '15px',
-                                                                transform: isSelected ? 'scale(0.98)' : 'none',
-                                                                transition: 'all 0.1s'
-                                                            }}
-                                                        >
-                                                            <span style={{ textAlign: 'left', flex: 1, fontSize: '0.9rem' }}>{action.label}</span>
-                                                            <span style={{
-                                                                fontSize: '1.2rem',
-                                                                fontWeight: 'bold',
-                                                                marginLeft: '10px',
-                                                                color: isSelected ? 'white' : (action.value > 0 ? '#2e7d32' : '#c62828')
-                                                            }}>
-                                                                {action.value > 0 ? '+' + action.value : action.value}
-                                                            </span>
-                                                        </button>
+                                                        <div key={action.id} style={{ position: 'relative' }}>
+                                                            <button
+                                                                className="action-option-btn"
+                                                                onClick={() => handleActionClick(action.id)}
+                                                                style={{
+                                                                    background: isSelected ? 'var(--accent-color)' : getActionColor(action.id),
+                                                                    color: isSelected ? 'white' : '#333',
+                                                                    border: isSelected ? '2px solid var(--accent-color)' : '1px solid rgba(0,0,0,0.1)',
+                                                                    width: '100%',
+                                                                    margin: 0,
+                                                                    display: 'flex',
+                                                                    justifyContent: 'space-between',
+                                                                    alignItems: 'center',
+                                                                    padding: '15px',
+                                                                    transform: isSelected ? 'scale(0.98)' : 'none',
+                                                                    transition: 'all 0.1s'
+                                                                }}
+                                                            >
+                                                                <span style={{ textAlign: 'left', flex: 1, fontSize: '0.9rem' }}>{action.label}</span>
+                                                                <span style={{
+                                                                    fontSize: '1.2rem',
+                                                                    fontWeight: 'bold',
+                                                                    marginLeft: '10px',
+                                                                    color: isSelected ? 'white' : (action.value > 0 ? '#2e7d32' : '#c62828')
+                                                                }}>
+                                                                    {action.value > 0 ? '+' + action.value : action.value}
+                                                                </span>
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDeleteDefinition(action.id);
+                                                                }}
+                                                                style={{
+                                                                    position: 'absolute',
+                                                                    top: '-8px',
+                                                                    right: '-8px',
+                                                                    background: 'white',
+                                                                    border: '1px solid #ddd',
+                                                                    borderRadius: '50%',
+                                                                    width: '24px',
+                                                                    height: '24px',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    cursor: 'pointer',
+                                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                                                    fontSize: '0.8rem',
+                                                                    opacity: 0.8
+                                                                }}
+                                                            >
+                                                                🗑️
+                                                            </button>
+                                                        </div>
                                                     );
                                                 })}
                                                 {/* Custom Action Button */}
@@ -508,30 +572,32 @@ const ChildDetail = () => {
                                 })}
                             </div>
 
-                            {isMultiSelect ? (
-                                <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
-                                    <button className="close-modal" onClick={() => setModalOpen(false)} style={{ flex: 1 }}>Annuler</button>
-                                    <button
-                                        onClick={handleBatchSubmit}
-                                        disabled={selectedActions.size === 0}
-                                        style={{
-                                            flex: 2,
-                                            background: selectedActions.size > 0 ? 'var(--accent-color)' : '#ccc',
-                                            color: 'white',
-                                            border: 'none',
-                                            padding: '15px',
-                                            borderRadius: '12px',
-                                            fontSize: '1.1rem',
-                                            fontWeight: 'bold',
-                                            cursor: selectedActions.size > 0 ? 'pointer' : 'not-allowed'
-                                        }}
-                                    >
-                                        Valider ({selectedActions.size})
-                                    </button>
-                                </div>
-                            ) : (
-                                <button className="close-modal" onClick={() => setModalOpen(false)}>Annuler</button>
-                            )}
+                            {
+                                isMultiSelect ? (
+                                    <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
+                                        <button className="close-modal" onClick={() => setModalOpen(false)} style={{ flex: 1 }}>Annuler</button>
+                                        <button
+                                            onClick={handleBatchSubmit}
+                                            disabled={selectedActions.size === 0}
+                                            style={{
+                                                flex: 2,
+                                                background: selectedActions.size > 0 ? 'var(--accent-color)' : '#ccc',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '15px',
+                                                borderRadius: '12px',
+                                                fontSize: '1.1rem',
+                                                fontWeight: 'bold',
+                                                cursor: selectedActions.size > 0 ? 'pointer' : 'not-allowed'
+                                            }}
+                                        >
+                                            Valider ({selectedActions.size})
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button className="close-modal" onClick={() => setModalOpen(false)}>Annuler</button>
+                                )
+                            }
                         </div>
                     </div>
                 )
@@ -556,7 +622,7 @@ const ChildDetail = () => {
                 actions={actions}
             />
 
-            <StatisticsModal
+            <StatisticsDashboard
                 isOpen={statsModalOpen}
                 onClose={() => setStatsModalOpen(false)}
                 logs={logs.filter(l => l.childId === kid.id)}

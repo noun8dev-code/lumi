@@ -285,6 +285,10 @@ export const DataProvider = ({ children }) => {
         setActions([...actions, newAction]);
     };
 
+    const deleteAction = (actionId) => {
+        setActions(actions.filter(a => a.id !== actionId));
+    };
+
     const logAction = (childId, actionId) => {
         const action = actions.find(a => a.id === actionId);
         if (!action) return;
@@ -309,6 +313,26 @@ export const DataProvider = ({ children }) => {
         }));
     };
 
+    const deleteLog = (logId) => {
+        const logToDelete = logs.find(l => l.id === logId);
+        if (!logToDelete) return;
+
+        // 1. Remove from logs
+        setLogs(logs.filter(l => l.id !== logId));
+
+        // 2. Adjust child score (reverse the action value)
+        setKids(kids.map(kid => {
+            if (kid.id === logToDelete.childId) {
+                // If it was a good action (+1), we remove it => -1
+                // If it was a bad action (-1), we remove it => +1
+                let newScore = kid.score - logToDelete.value;
+                if (newScore < 0) newScore = 0;
+                return { ...kid, score: newScore };
+            }
+            return kid;
+        }));
+    };
+
     const resetScores = () => {
         setKids(kids.map(kid => ({ ...kid, score: 10 })));
         setLogs([]);
@@ -323,8 +347,9 @@ export const DataProvider = ({ children }) => {
             removeChild,
             validateWeek,
             addAction,
+            deleteAction,
             logAction,
-            logAction,
+            deleteLog,
             resetScores,
             theme,
             toggleTheme,
