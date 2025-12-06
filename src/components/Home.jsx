@@ -14,6 +14,12 @@ const Home = () => {
 
     const [newChildImage, setNewChildImage] = useState(null);
 
+    const [pinModalOpen, setPinModalOpen] = useState(false);
+    const [pinStep, setPinStep] = useState('check'); // 'check' | 'set'
+    const [syncModalOpen, setSyncModalOpen] = useState(false);
+    const [pendingChildName, setPendingChildName] = useState(null);
+    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+
     const handlePinClick = () => {
         setPendingChildName(null);
         if (pin) {

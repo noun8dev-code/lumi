@@ -4,10 +4,14 @@ import App from './App.jsx'
 import './index.css'
 import { DataProvider } from './context/DataContext.jsx'
 
+import ErrorBoundary from './components/ErrorBoundary.jsx'
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <DataProvider>
-      <App />
-    </DataProvider>
+    <ErrorBoundary>
+      <DataProvider>
+        <App />
+      </DataProvider>
+    </ErrorBoundary>
   </React.StrictMode>,
 )
