@@ -1,39 +1,57 @@
 :root {
-  /* Apple Light Theme */
-  --bg-color: #F2F2F7;
-  --text-color: #000000;
+  /* Boho / Soft Light Theme */
+  --bg-color: #E6D7CF;
+  /* User provided Beige/Taupe */
+  --text-color: #4A4A4A;
+  /* Pebble / Dark Grey */
   --card-bg: #FFFFFF;
-  --header-text: #000000;
-  --subtext-color: #8E8E93;
-  --accent-color: #007AFF;
-  --accent-hover: #0056b3;
-  --input-bg: #E3E3E8;
-  --input-text: #000000;
+  --header-text: #2D2D2D;
+  --subtext-color: #8C8C8C;
+  --accent-color: #E39774;
+  /* Terracotta / Nectarine */
+  --accent-hover: #D7897F;
+  --input-bg: #F5F1E8;
+  /* Sand / Light Beige */
+  --input-text: #4A4A4A;
   --shadow-color: rgba(0, 0, 0, 0.05);
   --modal-bg: #FFFFFF;
-  --modal-overlay: rgba(0, 0, 0, 0.2);
-  --border-color: #C6C6C8;
-  --option-hover: #F2F2F7;
+  --modal-overlay: rgba(74, 74, 74, 0.2);
+  --border-color: #E5E0D8;
+  --option-hover: #F9F6F0;
   --btn-bg: #FFFFFF;
 }
 
 [data-theme='dark'] {
-  /* Apple Dark Theme */
-  --bg-color: #000000;
-  --text-color: #FFFFFF;
-  --card-bg: #1C1C1E;
-  --header-text: #FFFFFF;
-  --subtext-color: #8E8E93;
-  --accent-color: #0A84FF;
-  --accent-hover: #409CFF;
-  --input-bg: #1C1C1E;
-  --input-text: #FFFFFF;
-  --shadow-color: rgba(0, 0, 0, 0.5);
-  --modal-bg: #1C1C1E;
-  --modal-overlay: rgba(0, 0, 0, 0.6);
-  --border-color: #38383A;
-  --option-hover: #2C2C2E;
-  --btn-bg: #2C2C2E;
+  /* Deep Waters / Dark Theme with Menthe & Lagune */
+  --bg-color: #11303C;
+  /* Deep Teal */
+  --bg-image: none;
+
+  --text-color: #FDFBF7;
+  /* Seashell */
+
+  --card-bg: #1A4D5E;
+  /* Lighter Teal */
+  --header-text: #FDFBF7;
+  --subtext-color: #6398A9;
+  /* Lagune for subtext */
+
+  --accent-color: #96C7B3;
+  /* Menthe - Primary Pop */
+  --accent-hover: #6398A9;
+  /* Lagune - Hover */
+
+  --input-bg: #0F2A35;
+  /* Darker Teal */
+  --input-text: #FDFBF7;
+
+  --shadow-color: rgba(0, 0, 0, 0.4);
+  --modal-bg: #1A4D5E;
+  --modal-overlay: rgba(17, 48, 60, 0.85);
+  /* Deep Teal Overlay */
+  --border-color: #245A6D;
+  --option-hover: #245A6D;
+  --btn-bg: #0F2A35;
 }
 
 body {
@@ -41,13 +59,18 @@ body {
   padding: 0;
   /* Remove default padding for full mobile feel */
   background-color: var(--bg-color);
+  background-image: var(--bg-image, none);
+  background-attachment: fixed;
+  /* Keep stripes fixed during scroll */
   color: var(--text-color);
   min-height: 100vh;
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background 0.3s ease, color 0.3s ease;
 }
+
+/* Glassmorphism utility removed */
 
 .dashboard-simple {
   max-width: 600px;
