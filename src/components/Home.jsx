@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import PinModal from './PinModal';
 import SyncModal from './SyncModal';
 import PaymentModal from './PaymentModal';
+import DeleteConfirmModal from './DeleteConfirmModal';
 
 
 
@@ -19,6 +20,25 @@ const Home = () => {
     const [syncModalOpen, setSyncModalOpen] = useState(false);
     const [pendingChildName, setPendingChildName] = useState(null);
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+
+    // Delete Modal State
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [childToDelete, setChildToDelete] = useState(null);
+
+    const handleDeleteClick = (e, kid) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setChildToDelete(kid);
+        setDeleteModalOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (childToDelete) {
+            removeChild(childToDelete.id);
+            setDeleteModalOpen(false);
+            setChildToDelete(null);
+        }
+    };
 
     const handlePinClick = () => {
         setPendingChildName(null);
@@ -76,14 +96,7 @@ const Home = () => {
         processAddChild();
     };
 
-    const handleDeleteChild = (e, childId, childName) => {
-        e.preventDefault(); // Prevent navigation
-        e.stopPropagation(); // Stop event bubbling
 
-        if (window.confirm(`Êtes-vous sûr de vouloir supprimer ${childName} ?`)) {
-            removeChild(childId);
-        }
-    };
 
     const handleNavigate = (id) => {
         navigate(`/child/${id}`);
@@ -181,25 +194,13 @@ const Home = () => {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                             <button
-                                onClick={(e) => handleDeleteChild(e, kid.id, kid.name)}
-                                style={{
-                                    background: '#ff3b30',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '50%',
-                                    width: '36px',
-                                    height: '36px',
-                                    fontSize: '1rem',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    marginRight: '10px',
-                                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                                }}
+                                onClick={(e) => handleDeleteClick(e, kid)}
+                                className="delete-btn-modern"
                                 title="Supprimer"
                             >
-                                🗑️
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '20px', height: '20px' }}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                </svg>
                             </button>
                             <span style={{ fontWeight: 'bold', color: kid.score >= 5 ? '#34c759' : '#ff3b30' }}>
                                 {kid.score}
@@ -209,6 +210,14 @@ const Home = () => {
                     </div>
                 ))}
             </div>
+
+            <DeleteConfirmModal
+                isOpen={deleteModalOpen}
+                onClose={() => setDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                title={`Supprimer ${childToDelete?.name} ?`}
+                message="Cette action est irréversible. Tout l'historique sera perdu."
+            />
 
             <PinModal
                 key={pinStep} // Force re-render when step changes
@@ -237,6 +246,35 @@ const Home = () => {
                 onClose={() => setPaymentModalOpen(false)}
                 onConfirm={handlePaymentConfirm}
             />
+
+            <style>{`
+                .delete-btn-modern {
+                    background: white;
+                    color: #ff3b30;
+                    border: 1px solid #ff3b30;
+                    border-radius: 50%;
+                    width: 36px;
+                    height: 36px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    margin-right: 10px;
+                    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                }
+                .delete-btn-modern:hover {
+                    background: #ff3b30;
+                    color: white;
+                    transform: scale(1.1) rotate(5deg);
+                    box-shadow: 0 4px 8px rgba(255, 59, 48, 0.3);
+                }
+                .kid-item {
+                    transition: transform 0.2s;
+                }
+                .kid-item:active {
+                    transform: scale(0.98);
+                }
+            `}</style>
         </div>
     );
 };

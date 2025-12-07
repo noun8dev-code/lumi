@@ -12,6 +12,7 @@ import EvolutionChart from './EvolutionChart';
 import PinModal from './PinModal';
 import WeeklyRecapModal from './WeeklyRecapModal';
 import StatisticsDashboard from './StatisticsDashboard';
+import DeleteConfirmModal from './DeleteConfirmModal';
 
 const ChildDetail = () => {
     const { id } = useParams();
@@ -60,6 +61,11 @@ const ChildDetail = () => {
     const [pendingAction, setPendingAction] = useState(null); // { type: 'log' | 'validate' | 'log-batch', payload: ... }
     const [recapModalOpen, setRecapModalOpen] = useState(false);
     const [statsModalOpen, setStatsModalOpen] = useState(false);
+
+    // Delete Modal State
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null); // id
+    const [deleteType, setDeleteType] = useState(null); // 'log' or 'action-def'
 
     // Multi-Select State
     const [isMultiSelect, setIsMultiSelect] = useState(false);
@@ -161,9 +167,9 @@ const ChildDetail = () => {
             setPendingAction({ type: 'delete-log', payload: logId });
             setPinModalOpen(true);
         } else {
-            if (window.confirm("Supprimer cet historique ?")) {
-                executeDeleteLog(logId);
-            }
+            setItemToDelete(logId);
+            setDeleteType('log');
+            setDeleteModalOpen(true);
         }
     };
 
@@ -172,10 +178,21 @@ const ChildDetail = () => {
             setPendingAction({ type: 'delete-action-def', payload: actionId });
             setPinModalOpen(true);
         } else {
-            if (window.confirm("Supprimer cette action ?")) {
-                deleteAction(actionId);
-            }
+            setItemToDelete(actionId);
+            setDeleteType('action-def');
+            setDeleteModalOpen(true);
         }
+    };
+
+    const confirmDelete = () => {
+        if (deleteType === 'log') {
+            executeDeleteLog(itemToDelete);
+        } else if (deleteType === 'action-def') {
+            deleteAction(itemToDelete);
+        }
+        setDeleteModalOpen(false);
+        setItemToDelete(null);
+        setDeleteType(null);
     };
 
     const handleValidateWeek = () => {
@@ -303,7 +320,11 @@ const ChildDetail = () => {
 
     return (
         <div className={`dashboard-simple ${lightning ? 'shake-effect' : ''}`}>
-            {lightning && <div className="lightning-flash"></div>}
+            {lightning && (
+                <div className="lightning-flash">
+                    <div className="lightning-icon">⚡</div>
+                </div>
+            )}
             <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Link to="/" style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '1.1rem', fontWeight: '500' }}>
                     ‹ Retour
@@ -528,7 +549,7 @@ const ChildDetail = () => {
                                                                     top: '-8px',
                                                                     right: '-8px',
                                                                     background: 'white',
-                                                                    border: '1px solid #ddd',
+                                                                    border: '1px solid #ff3b30',
                                                                     borderRadius: '50%',
                                                                     width: '24px',
                                                                     height: '24px',
@@ -537,11 +558,24 @@ const ChildDetail = () => {
                                                                     justifyContent: 'center',
                                                                     cursor: 'pointer',
                                                                     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                                                    fontSize: '0.8rem',
-                                                                    opacity: 0.8
+                                                                    color: '#ff3b30',
+                                                                    transition: 'transform 0.2s'
                                                                 }}
+                                                                onMouseEnter={(e) => {
+                                                                    e.currentTarget.style.transform = 'scale(1.1)';
+                                                                    e.currentTarget.style.background = '#ff3b30';
+                                                                    e.currentTarget.style.color = 'white';
+                                                                }}
+                                                                onMouseLeave={(e) => {
+                                                                    e.currentTarget.style.transform = 'scale(1)';
+                                                                    e.currentTarget.style.background = 'white';
+                                                                    e.currentTarget.style.color = '#ff3b30';
+                                                                }}
+                                                                title="Supprimer cette action"
                                                             >
-                                                                🗑️
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '14px', height: '14px' }}>
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                                </svg>
                                                             </button>
                                                         </div>
                                                     );
@@ -627,6 +661,16 @@ const ChildDetail = () => {
                 onClose={() => setStatsModalOpen(false)}
                 logs={logs.filter(l => l.childId === kid.id)}
                 actions={actions}
+            />
+
+            <DeleteConfirmModal
+                isOpen={deleteModalOpen}
+                onClose={() => setDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                title={deleteType === 'log' ? "Supprimer cet historique ?" : "Supprimer cette action ?"}
+                message={deleteType === 'log'
+                    ? "Cette action sera retirée de l'historique et les points seront ajustés."
+                    : "Cette action ne sera plus disponible dans la liste."}
             />
         </div >
     );
