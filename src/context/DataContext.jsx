@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 
 const DataContext = createContext();
@@ -37,100 +37,156 @@ export const DataProvider = ({ children }) => {
     });
 
     const [isInitialized, setIsInitialized] = useState(false);
+    const [user, setUser] = useState(null);
 
-    useEffect(() => {
-        localStorage.setItem('sop_theme', theme);
-        document.body.setAttribute('data-theme', theme);
-    }, [theme]);
+    // Refs to hold current state for "Start-up Sync" without triggering re-renders
+    const kidsRef = useRef(kids);
+    const pinRef = useRef(pin);
 
-    useEffect(() => {
-        if (pin) {
-            localStorage.setItem('sop_pin', pin);
-        } else {
-            localStorage.removeItem('sop_pin');
-        }
-    }, [pin]);
+    useEffect(() => { kidsRef.current = kids; }, [kids]);
+    useEffect(() => { pinRef.current = pin; }, [pin]);
 
-    // Initial Fetch on Mount / Family Change
+    // Auth & Persistence Logic
     useEffect(() => {
-        if (familyId) {
-            const fetchFamilyData = async () => {
+        // 1. Check active session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(session?.user ?? null);
+            if (session?.user) {
+                setFamilyId(session.user.id);
+            }
+        });
+
+        // 2. Listen for changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            const currentUser = session?.user;
+            setUser(currentUser ?? null);
+
+            if (currentUser) {
+                setFamilyId(currentUser.id);
+            } else {
+                setFamilyId(null);
+                setKids([]);
+                setIsInitialized(true);
+            }
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    // Load data from LocalStorage (Guest) OR Supabase (User)
+    useEffect(() => {
+        const loadData = async () => {
+            if (user && familyId) {
+                // LOGGED IN: Fetch from Supabase
                 const { data, error } = await supabase
                     .from('families')
                     .select('*')
                     .eq('id', familyId)
                     .single();
 
+                if (error && error.code !== 'PGRST116') { // PGRST116 is "Row not found"
+                    console.error("Error fetching family:", error);
+                }
+
                 if (data) {
                     if (data.kids) {
                         let loadedKids = data.kids;
                         if (typeof loadedKids === 'string') {
-                            try {
-                                loadedKids = JSON.parse(loadedKids);
-                            } catch (e) {
-                                console.error("Failed to parse kids JSON", e);
-                                loadedKids = [];
-                            }
+                            try { loadedKids = JSON.parse(loadedKids); } catch (e) { loadedKids = []; }
                         }
-                        if (Array.isArray(loadedKids)) {
-                            setKids(loadedKids);
-                        }
+                        setKids(Array.isArray(loadedKids) ? loadedKids : []);
                     }
                     if (data.pin) setPin(data.pin);
+                } else {
+                    // New user (or empty DB): Upload LOCAL data to initialize DB
+                    // This ensures "Connect to DB" saves current work
+                    const initialKids = kidsRef.current || [];
+                    const initialPin = pinRef.current;
+
+                    await supabase
+                        .from('families')
+                        .insert([
+                            {
+                                id: familyId,
+                                kids: initialKids,
+                                pin: initialPin
+                            }
+                        ]);
+                    // No need to setKids, we keep the local ones
                 }
-                setIsInitialized(true);
-            };
-            fetchFamilyData();
-        } else {
+            }
+
             setIsInitialized(true);
-        }
-    }, [familyId]);
+        };
 
+        loadData();
+    }, [user, familyId]);
+
+    // Update LocalStorage vs Supabase
     useEffect(() => {
-        if (familyId) {
-            localStorage.setItem('sop_family_id', familyId);
+        if (!isInitialized) return;
 
-            // Subscribe to Supabase
-            const channel = supabase
-                .channel('family-updates')
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'UPDATE',
-                        schema: 'public',
-                        table: 'families',
-                        filter: `id=eq.${familyId}`,
-                    },
-                    (payload) => {
-                        if (payload.new) {
-                            if (payload.new.kids) {
-                                let newKids = payload.new.kids;
-                                if (typeof newKids === 'string') {
-                                    try {
-                                        newKids = JSON.parse(newKids);
-                                    } catch (e) {
-                                        console.error("Failed to parse kids JSON", e);
-                                        newKids = [];
-                                    }
-                                }
-                                setKids(newKids);
-                            }
-                            // Sync PIN if it changes remotely
-                            if (payload.new.pin !== undefined) {
-                                setPin(payload.new.pin);
-                            }
+        if (user && familyId) {
+            // Sync to Supabase
+            supabase
+                .from('families')
+                .upsert({ id: familyId, kids: kids, pin: pin })
+                .then(({ error }) => {
+                    if (error) console.error("Sync error:", error);
+                });
+        } else {
+            // Save to LocalStorage (Guest)
+            localStorage.setItem('sop_kids', JSON.stringify(kids));
+            if (pin) localStorage.setItem('sop_pin', pin);
+            else localStorage.removeItem('sop_pin');
+        }
+    }, [kids, pin, familyId, user, isInitialized]);
+
+    // Theme is local preference
+    useEffect(() => {
+        localStorage.setItem('sop_theme', theme);
+        document.body.setAttribute('data-theme', theme);
+    }, [theme]);
+
+    // Real-time Subscription (Only if logged in)
+    useEffect(() => {
+        if (!user || !familyId) return;
+
+        const channel = supabase
+            .channel('family-updates')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'families',
+                    filter: `id=eq.${familyId}`,
+                },
+                (payload) => {
+                    if (payload.new) {
+                        // Merge logic could go here, for now just simplistic replace
+                        if (payload.new.kids) {
+                            let newKids = payload.new.kids;
+                            if (typeof newKids === 'string') try { newKids = JSON.parse(newKids); } catch { }
+                            // Only update if different to avoid loops? simplified:
+                            // setKids(prev => JSON.stringify(prev) !== JSON.stringify(newKids) ? newKids : prev);
                         }
                     }
-                )
-                .subscribe();
+                }
+            )
+            .subscribe();
 
-            return () => {
-                supabase.removeChannel(channel);
-            };
-        } else {
-            localStorage.removeItem('sop_family_id');
-        }
-    }, [familyId]);
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [familyId, user]);
+
+    const logout = async () => {
+        await supabase.auth.signOut();
+        // State updates handled by onAuthStateChange
+    };
+
+
 
     const toggleTheme = () => {
         setTheme(prev => prev === 'light' ? 'dark' : 'light');
@@ -355,6 +411,8 @@ export const DataProvider = ({ children }) => {
             toggleTheme,
             pin,
             setAppPin,
+            user,
+            logout,
             familyId,
             createFamily,
             joinFamily

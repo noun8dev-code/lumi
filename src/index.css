@@ -95,8 +95,10 @@ body {
 .icon-btn {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
-  border: none;
+  border-radius: 12px;
+  /* iOS style soft square */
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  /* Subtle border */
   background: var(--btn-bg);
   color: var(--text-color);
   font-size: 1.2rem;
@@ -105,7 +107,14 @@ body {
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 2px 8px var(--shadow-color);
-  transition: transform 0.2s, background 0.2s;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.icon-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow-color);
+  background: var(--card-bg);
+  /* Slight contrast on hover */
 }
 
 .icon-btn:active {
@@ -178,9 +187,10 @@ body {
 }
 
 .add-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  /* Consistent with other buttons */
   border: none;
   background: var(--accent-color);
   color: #fff;
@@ -188,11 +198,14 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .add-btn:hover {
   background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Kid Item */
