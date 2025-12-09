@@ -665,8 +665,8 @@ const ChildDetail = () => {
             <StatisticsDashboard
                 isOpen={statsModalOpen}
                 onClose={() => setStatsModalOpen(false)}
-                logs={logs.filter(l => l.childId === kid.id)}
-                actions={actions}
+                logs={(logs || []).filter(l => l.childId === kid.id)}
+                actions={actions || []}
             />
 
             <DeleteConfirmModal

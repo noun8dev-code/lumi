@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { Link, useNavigate } from 'react-router-dom';
 import PinModal from './PinModal';
@@ -12,6 +12,14 @@ const Home = () => {
     const { kids, addChild, removeChild, theme, toggleTheme, pin, setAppPin, familyId, createFamily, joinFamily, user, logout } = useData();
     const navigate = useNavigate();
     const [newChildName, setNewChildName] = useState('');
+
+    useEffect(() => {
+        // If no kids and onboarding not flagged as done, redirect
+        const onboardingDone = localStorage.getItem('sop_onboarding_completed');
+        if (kids.length === 0 && !onboardingDone) {
+            navigate('/onboarding');
+        }
+    }, [kids, navigate]);
 
     const [newChildImage, setNewChildImage] = useState(null);
 
@@ -83,6 +91,13 @@ const Home = () => {
 
     const handleAddChild = () => {
         if (!newChildName.trim()) return;
+
+        if (!user) {
+            if (window.confirm("Pour sécuriser vos données et ajouter un enfant, vous devez vous connecter. Voulez-vous créer un compte ou vous connecter maintenant ?")) {
+                navigate('/login');
+            }
+            return;
+        }
 
         if (kids.length >= 1) {
             setPaymentModalOpen(true);
